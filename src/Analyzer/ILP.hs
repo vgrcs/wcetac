@@ -61,7 +61,6 @@ data Expr = BoolExpr Bool | Double Double | Equal Expr Expr | Plus Expr Expr der
 
 calculation
   :: (Ord t, Cost t, Show t, Stateable a, Transition (Rel a), Ord (Coord t)) => [Rel a]
-  -- -> Invs (CPU t)
   -> Times t
   -> NodeCount
   -> ReductionMode

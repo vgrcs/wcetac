@@ -387,9 +387,7 @@ updateCache cache level addr opcode
                                  cache' = [(addr, opcode)] Seq.<| shift
                             return (cache', Just (level, evict))
           else if cSize == 0
-                   then do
-                        --putStrLn "cache size zero"
-                        return (cache, Nothing)
+                   then return (cache, Nothing)
           else  error ("top over size")
 
 -- | Evict a set of memory blocks to the Main memory

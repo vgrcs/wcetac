@@ -57,14 +57,6 @@ emptyCache level = Seq.fromList (List.take (cacheSize level) (List.repeat []) )
 data L2Box = L2Box Cache deriving (Ord, Eq)
 data L1Box = L1Box Cache deriving (Ord, Eq)
 
-
-{-instance Eq L1Box where
-  L1Box a == L1Box b  = filter (\ c -> not $ null c) (toList a) == filter (\c -> not $ null c) (toList b)
-
-instance Eq L2Box where
-  L2Box a == L2Box b  = filter (\ c -> not $ null c) (toList a) == filter (\c -> not $ null c) (toList b)
--}
-
 instance Show L1Box where
   show (L1Box l) =  show (CacheWrapper l)
 
@@ -107,13 +99,11 @@ mergeLRU cA cB age op
           f d c addr = do
                      let lineA = access cA addr
                          lineB = access cB addr
-                     --putStrLn ("ADDR: " ++ show addr ++ " in A: " ++ show lineA ++ " in B: " ++ show lineB)
                      case (lineA, lineB) of
                           (Hit la, Hit lb) ->
                                  if la /= lb
                                     then do
                                          c' <- updateCacheAt d addr la lb age c cA cB
-                                         --putStrLn $ "NEW= " ++ show (CacheWrapper c')
                                          return c'
                                     else do
                                          let c' = Seq.adjust nub la c
@@ -124,41 +114,12 @@ mergeLRU cA cB age op
           c = if sB > sA
                  then Seq.fromList (List.zipWith (++) lB lA)
                  else Seq.fromList (List.zipWith (++) lA lB)
-          --c = Seq.fromList (List.zipWith (++) lA lB)
-
-      --putStrLn $ "join caches= " ++ show addrs
-      --putStrLn $ "elems A= " ++ show (List.concat (toList elemA))
-      --putStrLn $ "elems B= " ++ show (List.concat (toList elemB))
       let debug = False
-#if defined(SIM)
-      {-debug  <- do
-                putStrLn "LRU"
-                cmd <- getLine
-                putStrLn ""
-                case List.head cmd of
-                     'a' -> do
-                           putStrLn $ "A= " ++ show (CacheWrapper cA)
-                           putStrLn $ "B= " ++ show (CacheWrapper cB)
-                           putStrLn $ "C= " ++ show (CacheWrapper c)
-                           return True
-                     _ -> return False-}
-#endif
-      --putStrLn $ "A= " ++ show (CacheWrapper cA)
-      --putStrLn $ "B= " ++ show (CacheWrapper cB)
-      --putStrLn $ "C= " ++ show (CacheWrapper c)
       c' <- foldM (f debug) c addrs
 
       let c'' = filter (\l -> not $ List.null l) $ toList c'
           diff = Seq.length c' - List.length c''
           c_ = Seq.fromList (c''  ++ (replicate diff [] ) )
-
-
-      --if c_ /= c'
-      --   then error $ "W " ++ show diff
-      --   else return ()
-#if defined(SIM)
-      --putStrLn $ "C'= " ++ show (CacheWrapper c_)
-#endif
       return c_
 
 
@@ -167,16 +128,13 @@ data CacheLineWrapper = CacheLineWrapper CacheLine
 
 instance Show CacheWrapper where
    show (CacheWrapper c)
-     =  let  --c' = filter (\x -> not $ null x) (toList c)
-             c' = toList c
+     =  let  c' = toList c
              ixs = [0 .. (length c') - 1]
              c'' = zip ixs c'
              c''' = filter (\ (i,set) -> set /= []) c''
              cache = List.map (\(i, set) -> show i ++ " => " ++ showLine set) c'''
-             --cache = List.map (\set -> showLine set)  (toList c)
              showLine [] = ""
              showLine set = show $ List.map (show . CacheLineWrapper) set
-             --cache' = filter (/= "") cache
         in  unlines cache
 
 
@@ -235,8 +193,6 @@ updateCacheAt d addr la lb age cache _ _
                            else error "comparing ages"
 
            pos = findIndex (\(a,_) -> a == addr) line
-      --putStrLn $ "position of " ++ show addr ++ " in line " ++ show (map CacheLineWrapper line) ++ " is " ++ show pos
-      --putStrLn $ "index of updated line " ++ show index
       let  (line', content )
                = case pos of
                       Just p -> let c = line !! p

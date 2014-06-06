@@ -48,7 +48,6 @@ divide
 
 divide n a
   = do
-    --error $ "DIVIDE " ++ (show ((n)))
     return $ replicate n a
 
 multiply
@@ -59,8 +58,6 @@ multiply
 multiply fs as
   = do
     zipWithM (\f a -> f a) fs as
-    --as' <- sequence $ map f as
-    --reduce as'
 
 reduce
   :: (Lattice a, Synchronizable a, Show a) => [a]
@@ -69,32 +66,14 @@ reduce
 reduce (a:as)
   = do
     (a':as') <- mapM finalize (a:as)
-    --foldM (\accum v' -> join accum v') a' as'
     return $ foldl join a' as'
 
-
-{-alternatives
-  :: (Show a, Forkable b) => (a -> Par b)
-  -> (a -> Par b)
-  -> a
-  -> Par (b,b)
-
-alternatives left right s
-  = do
-    (l, r) <- (left //// right) (s, s) --liftM2 (\a b -> (a,b)) (left s) (right s)
-    b  <- branch l
-    if b
-       then liftM (\r -> (l,r) ) (compl r)
-       else liftM (\l -> (l,r) ) (compl l)
--}
 
 (*****) :: (a -> b) -> (b -> c) -> (a -> c)
 (f ***** g) s = (g . f) s
 
 (/////) :: (a -> b) -> (c -> d) -> ((a,c) -> (b, d))
 (f ///// g) (s, t) = (f s, g t)
---(f ///// g) p = (f . fst, g . snd)
-
 
 
 (****)
@@ -109,20 +88,6 @@ alternatives left right s
      s' <- f s
      s'' <- g s'
      return s''
-
-
-{-(++++)
-   :: (Show b, Forkable a, Iterable b) =>  (b -> IO a)
-   -> (a -> IO b)
-   -> a
-   -> IO a
-
-(f ++++ t) s
-  =  do
-     s' <- t s
-     b  <- fixed s'
-     if   b  then (loop **** f **** (f ++++ t)) s'
-             else compl s-}
 
 (++++)
    :: (Show b, Forkable a, Iterable b, Stateable a) =>  (b -> IO a)
@@ -153,15 +118,6 @@ f $$$$ t
                    then (loop s **** f **** rec) s'
                    else return s'
 
-{-(f $$$$ t) s
-  =  do
-     s' <- t s
-     b  <- fixed2 s
-     if  not b
-              then (loop **** f **** (f $$$$ t)) s'
-              else return s'-}
-
-
 (////)
    :: (Show a, Show c) => (a -> IO  b)
    -> (c -> IO  d)
@@ -170,15 +126,6 @@ f $$$$ t
 
 (f //// g) (s, t)
    = liftM2 (\ x y -> (x,y)) (f s) (g t)
-
-{-(f //// g) (s, t)
-    = do
-      s' <- f s
-      t' <- g t
-      return (s' , t') -}
-
--- (f |||| g)
-
 
 
 wide

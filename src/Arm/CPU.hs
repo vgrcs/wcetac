@@ -60,20 +60,9 @@ type MultiCore a = Map.Map Int (Core a)
 -- |
 instance (Show a, Show (PState a)) => Show (CPU a) where
   show cpu
-  --  = "cpu= " ++ show (Map.map (\core -> coreId core) (multi cpu))
-  --  = "cpu= " ++ show ((multi cpu) Map.! 0)
-  --  = "cpu= " ++ show (active cpu)
     = "cpu= " ++ show (pipeline ((multi cpu) Map.! 0))
-  {-showsPrec id cpu
-    =  let cpuId = fromIntegral id / 10
-           comp = mod id 10
-       in  case comp of
-                0 -> (" " ++) -- registers
-                _ -> (" " ++)-}
 
 instance (Show a, Show (PState a)) => Show (Core a) where
-  --show a = show $ List.length $ pipeline a
-  --show a = show $ getReg (registers a) R3
   show a = show $ pipeline a
 
 
@@ -111,12 +100,6 @@ instance (Show a, Ord a, Eq a, Cost a, Ord (PState a), Show (PState a)) => Latti
           ctx = context b
           new = CPU { memory = mem, multi = cores,  active = act, context = ctx,
                       stable = stable', parallel = parallel' }
-
-          new' = unsafePerformIO $
-                    do
-                    putStrLn $ "CPU JOIN " ++ show (active a) ++ " or " ++ show (active b)
-                    return new
-
       in new
 
 
@@ -196,7 +179,6 @@ setCompl cpu@CPU {multi, active = (parent, child) }
          r' = setReg regs CPSR (CtrVal status')
          core' = core {registers = r'}
          multi' = Map.insert child core' multi
-     --putStrLn $ "COMPL " ++ (show (parent, child) ++ " " ++ show status')
      return $ cpu {multi = multi'}
 
 clearCompl

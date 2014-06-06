@@ -36,9 +36,7 @@ import Data.List.Utils
 
 type IntlvPos = Maybe Int
 
-data Identifier = Identifier { labelId :: Integer, procedure :: Proc, ilvpos :: IntlvPos } -- ,
-                               -- interlv :: Integer, position :: Int }
-                  -- deriving (Eq)
+data Identifier = Identifier { labelId :: Integer, procedure :: Proc, ilvpos :: IntlvPos }
 
 instance Eq Identifier where
   a == b = labelId a == labelId b && procedure a == procedure b
@@ -69,7 +67,6 @@ instance  Enum Identifier where
 
 instance Initialize Identifier where
   initial = Identifier { labelId = -1 , procedure = initial, ilvpos = Nothing }
-                         -- , interlv  = 0, position = 0 }
 
 instance  Enum Proc where
   succ p@Proc { procId = i} = p { procId = succ i }
@@ -95,7 +92,6 @@ instance Enum Label where
 
 data Label = Head Identifier
            | NodeL Identifier
-           -- | HaltL Identifier
            | ExitL Identifier
            | CallL Identifier
            | RootL Identifier
@@ -115,7 +111,7 @@ instance Initialize Label where
 
 class Labeled a where
   ppoint  :: a -> Integer
-  ipoint  :: a -> (Integer) -- , Integer,Int)
+  ipoint  :: a -> (Integer)
   parent  :: a -> Proc
   hook :: a -> Bool
   root :: a -> Bool
@@ -124,19 +120,16 @@ class Labeled a where
   exit  :: a -> Bool
   shift :: a -> Integer -> a
   setId :: a -> Integer -> a
-  --reset :: a -> a
-  --setPos :: a -> Int -> Integer -> Int -> a
   setPos :: a ->  Int -> a
   pos :: a -> Maybe Int
   identifier :: a -> Identifier
 
 
-desc l = (labelId l) -- , interlv l, position l)
+desc l = (labelId l)
 
 instance Labeled Label where
   ppoint (Head l)  = labelId l
   ppoint (NodeL l) = labelId l
-  --ppoint (HaltL l) = labelId l
   ppoint (CallL l) = labelId l
   ppoint (RootL l) = labelId l
   ppoint (HookL l) = labelId l
@@ -144,7 +137,6 @@ instance Labeled Label where
   ppoint (Empty) = -1
   ipoint (Head l)  = desc l
   ipoint (NodeL l) = desc l
-  --ipoint (HaltL l) = desc l
   ipoint (CallL l) = desc l
   ipoint (RootL l) = desc l
   ipoint (HookL l) = desc l
@@ -152,7 +144,6 @@ instance Labeled Label where
   ipoint (Empty)   = (-1)
   identifier (Head l)  = l
   identifier (NodeL l) = l
-  --identifier (HaltL l) = l
   identifier (CallL l) = l
   identifier (RootL l) = l
   identifier (HookL l) = l
@@ -161,7 +152,6 @@ instance Labeled Label where
   parent (Head  l) = procedure l
   parent (NodeL l) = procedure l
   parent (CallL l) = procedure l
-  --parent (HaltL l) = procedure l
   parent (RootL l) = procedure l
   parent (HookL l) = procedure l
   parent (ExitL l) = procedure l
@@ -169,42 +159,36 @@ instance Labeled Label where
   pos (Head  l) = ilvpos l
   pos (NodeL l) = ilvpos l
   pos (CallL l) = ilvpos l
-  --pos (HaltL l) = ilvpos l
   pos (RootL l) = ilvpos l
   pos (HookL l) = ilvpos l
   pos (ExitL l) = ilvpos l
   hook (Head _) = False
   hook (NodeL _) = False
   hook (CallL _) = False
-  --hook (HaltL _) = False
   hook (RootL _) = False
   hook (HookL _) = True
   hook (ExitL _) = False
   heads (Head _) = True
   heads (NodeL _) = False
   heads (CallL _) = False
-  --heads (HaltL _) = False
   heads (RootL _) = False
   heads (HookL _) = False
   heads (ExitL _) = False
   root (Head _) = False
   root (NodeL _) = False
   root (CallL _) = False
-  --root (HaltL _) = False
   root (RootL _) = True
   root (HookL _) = False
   root (ExitL _) = False
   bl (Head _) = False
   bl (NodeL _) = False
   bl (CallL _) = True
-  --bl (HaltL _) = False
   bl (RootL _) = False
   bl (HookL _) = False
   bl (ExitL _) = False
   exit (Head _) = False
   exit (NodeL _) = False
   exit (CallL _) = False
-  --exit (HaltL _) = False
   exit (RootL _) = False
   exit (HookL _) = False
   exit (ExitL _) = True
@@ -214,14 +198,6 @@ instance Labeled Label where
   shift (ExitL l) offset  = (ExitL l)
   shift Empty offset  = Empty
 
-  {-setId (NodeL l) new  = NodeL l { labelId = new, interlv = new }
-  setId (RootL l) new  = RootL l { labelId = new, interlv = new }
-  setId (Head l) new  = Head l { labelId = new, interlv = new }
-  setId (ExitL l) new  = ExitL l { labelId = new, interlv = new}
-  setId (CallL l) new  = CallL l { labelId = new, interlv = new }
-  setId (HookL l) new  = HookL l { labelId = new, interlv = new}
-  setId Empty _  = Empty-}
-
   setId (NodeL l) new  = NodeL l { labelId = new }
   setId (RootL l) new  = RootL l { labelId = new }
   setId (Head l) new   = Head l { labelId = new }
@@ -229,30 +205,6 @@ instance Labeled Label where
   setId (CallL l) new  = CallL l { labelId = new }
   setId (HookL l) new  = HookL l { labelId = new }
   setId Empty _  = Empty
-
-  {-reset (NodeL l) new = NodeL l { labelId = new, interlv = new, position = 0 }
-  reset (RootL l) new = RootL l { labelId = new, interlv = new,  position = 0 }
-  reset (Head l) new = Head l { labelId = new, interlv = new,  position = 0 }
-  reset (ExitL l) new = ExitL l { labelId = new, interlv = new,  position = 0 }
-  reset (CallL l) new = CallL l { labelId = new, interlv = new,  position = 0 }
-  reset (HookL l) new = HookL l { labelId = new, interlv = new,  position = 0 }
-  reset Empty _  = Empty-}
-
-  {-reset (NodeL l@Identifier {labelId = id})  = NodeL l { interlv = id, position = 0 }
-  reset (RootL l@Identifier {labelId = id})  = RootL l { interlv = id,  position = 0 }
-  reset (Head l@Identifier {labelId = id})   = Head l {  interlv = id,  position = 0 }
-  reset (ExitL l@Identifier {labelId = id})  = ExitL l { interlv = id,  position = 0 }
-  reset (CallL l@Identifier {labelId = id})  = CallL l { interlv = id,  position = 0 }
-  reset (HookL l@Identifier {labelId = id})  = HookL l { interlv = id,  position = 0 }
-  reset Empty   = Empty-}
-
-  {-setPos (NodeL l) new x y  = NodeL l { interlv = x, position = y, ilvpos = Just new }
-  setPos (RootL l) new x y = RootL l { interlv =  x, position = y, ilvpos = Just new }
-  setPos (CallL l) new x y = CallL l { interlv =  x, position = y, ilvpos = Just new }
-  setPos (HookL l) new x y = HookL l { interlv =  x, position = y, ilvpos = Just new }
-  setPos (Head l) new x y = Head l { interlv =  x, position = y, ilvpos = Just new }
-  setPos (ExitL l) new x y = ExitL l { interlv =  x, position = y, ilvpos = Just new }
-  setPos Empty _ _ _ = Empty-}
 
   setPos (NodeL l) new  = NodeL l { ilvpos = Just new }
   setPos (RootL l) new  = RootL l { ilvpos = Just new }
@@ -267,11 +219,7 @@ instance Eq Label where
   NodeL l1 == NodeL l2    =  l1 == l2
   Head  l1 == NodeL l2    =  l1 == l2
   NodeL l1 == Head  l2    =  l1 == l2
-  --HaltL l1 == HaltL l2    =  l1 == l2
-  --HaltL l1 == NodeL l2    =  l1 == l2
-  --HaltL l1 == Head  l2    =  l1 == l2
-  --NodeL l1 == HaltL l2    =  l1 == l2
-  --Head  l1 == HaltL l2    =  l1 == l2
+
 
   ExitL x == ExitL y      =  x == y
   ExitL x == _            =  False
@@ -304,7 +252,6 @@ instance Show Label where
   showsPrec _ (Head l)    =  (("H" ++ show (labelId l) ++ " {" ++ show (procedure l) ++ "}") ++)
   showsPrec 0 (NodeL l)   =  (("n" ++ show (labelId l)) ++)
   showsPrec _ (NodeL l)   =  (("n" ++ show (labelId l) ++ " {" ++ show (procedure l) ++ "}") ++)
-  --showsPrec _ (HaltL l)   =  (("halt " ++ (show (labelId l, interlv l)))++ )
   showsPrec _ Empty       =  ("empty label" ++)
   showsPrec _ (ExitL l) = let (s, p) = ((section . procedure) l, (procName . procedure) l)
                           in  if  s == p
@@ -327,33 +274,5 @@ instance Show Label where
                                  then (("hook "++ show (c,s)) ++)
                                  else (("hook "++ show (c,(s,p))) ++)
 
-
-{-instance Show Label where
-  showsPrec 0 (Head l)    =  (("H" ++ show (desc l)) ++)
-  showsPrec _ (Head l)    =  (("H" ++ show (desc l) ++ " {" ++ show (procedure l) ++ "}") ++)
-  showsPrec 0 (NodeL l)   =  (("n" ++ show (desc l)) ++)
-  showsPrec _ (NodeL l)   =  (("n" ++ show (desc l) ++ " {" ++ show (procedure l) ++ "}") ++)
-  showsPrec _ (HaltL l)   =  (("halt " ++ (show (labelId l, interlv l)))++ )
-  showsPrec _ Empty       =  ("empty label" ++)
-  showsPrec _ (ExitL l) = let (s, p) = ((section . procedure) l, (procName . procedure) l)
-                          in  if  s == p
-                                  then (("exit "++ " {" ++ show s ++ "}") ++)
-                                  else (("exit "++ " {" ++ show (s,p) ++ "}") ++)
-  showsPrec _ (CallL l) = let c = (desc l)
-                              (s, p) = ((section . procedure) l, (procName . procedure) l)
-                          in if  s == p
-                                 then  (("c"++ show c ++ " {" ++ show s ++ "}") ++)
-                                 else  (("c"++ show c ++ " {" ++ show (s,p) ++ "}") ++)
-  showsPrec _ (RootL l) = let c = (desc l)
-                              n = (procId . procedure) l
-                              (s, p) = ((section . procedure) l, (procName . procedure) l)
-                          in if  s == p
-                                 then  (("r"++ show c ++ " {" ++ show s ++ "}; " ++ show n) ++)
-                                 else  (("r"++ show c ++ " {" ++ show (s,p) ++ "}; " ++ show n) ++)
-  showsPrec _ (HookL l) = let c = (desc l)
-                              (s, p) = ((section . procedure) l, (procName . procedure) l)
-                          in if  s == p
-                                 then (("hook "++ show (c,s)) ++)
-                                 else (("hook "++ show (c,(s,p))) ++)-}
 
 

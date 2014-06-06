@@ -230,7 +230,7 @@ cut dbg label (Rec (Leaf b) body)
        then  putStrLn $ "CUT REC => b=" ++ show body ++ " , b'=" ++ show g
        else  return ()
     case g == body of
-         False -> return g -- EmptyGraph --g
+         False -> return g
          True -> return $  (Rec (Leaf b) body)
 
 cut dbg label (Choice c a b)
@@ -238,14 +238,11 @@ cut dbg label (Choice c a b)
     a' <- cut dbg label a
     b' <- cut dbg label b
     case a == a' && b == b' of
-         False  ->  return $ Choice c a' b' -- EmptyGraph --
+         False  ->  return $ Choice c a' b'
          True   ->  return $ Choice c a  b
 
 cut _ label EmptyGraph
   = return EmptyGraph
-
---cut label (Seq a b)
---  = error $ "cut " ++ show a ++ "\n\n" ++ show b
 
 cut _ label other
   = error $ "cut " ++ show other
@@ -261,9 +258,7 @@ insertInterleave
 insertInterleave label (Leaf a) interleave
   = do
     if sink a == label
-       then do
-            --putStrLn $ "CUT AT= " ++ show (a) ++ "\n" ++ show interleave
-            return $ Seq (Leaf a) interleave -- (Leaf2 interleave)
+       then return $ Seq (Leaf a) interleave
        else return (Leaf a)
 
 insertInterleave label (Seq a b) interleave
@@ -287,8 +282,7 @@ insertInterleave label EmptyGraph interleave
   = return EmptyGraph
 
 insertInterleave label (Leaf2 a) interleave
-  = return (Leaf2 a) --error $ "insertInterleave " ++ show other
-
+  = return (Leaf2 a)
 
 cut2
   :: Stateable a => Label
@@ -298,12 +292,8 @@ cut2
 cut2 label (Leaf a)
   = do
     if source a /= label
-       then do
-            --putStrLn $ "CUT2 AT= " ++ show (source a)
-            return EmptyGraph
-       else do
-            --putStrLn $ "DONT CUT2 AT= " ++ show (source a)
-            return (Leaf a)
+       then return EmptyGraph
+       else return (Leaf a)
 
 cut2 label (Seq graph EmptyGraph)
   = cut2 label graph
@@ -318,7 +308,6 @@ cut2 label (Seq graph (Leaf b))
 cut2 label (Seq graph (Rec (Leaf b) body))
   = do
     g <- cut2 label body
-    --putStrLn $ "REC2 " ++ show g ++ ">> " ++ show label
     case (g, g == body) of
          (EmptyGraph, _) -> cut2 label graph
          (_, False)  ->  return $ Seq graph (Seq (Leaf b) g)
@@ -397,7 +386,6 @@ sinkNodes
 sinkNodes (a, b, c, d) edges
   = let  id = ppoint . getLabel
          filter (k1,k2) _ = (k1 == id a) || (k2 == id b) || (k2 == id c) || (k2 == id d)
-         --filter (k1,k2) _ = (k1 == id a) && (k2 == id b)) || ((k1 == id c) && (k2 == id d))
          l:ls = Map.elems $ Map.filterWithKey filter edges
     in all (== l) ls
 
@@ -420,7 +408,6 @@ data TransformState =  TransformState { count :: EdgeCount, traceT :: Bool }
 
 transform
   :: (Show a, Stateable a)
---  =>  CFG a -> ReaderT NodeCount IO (CFG a)
   =>  CFG a -> StateT TransformState IO (CFG a)
 
 transform (Seq (Leaf a) EmptyGraph)
@@ -429,41 +416,12 @@ transform (Seq (Leaf a) EmptyGraph)
 transform (Seq (Leaf rb) graph)
   = do
     let top = headG_ graph
-
-    {-if ((ppoint . source ) rb, (ppoint . sink ) rb) == (120, 121)
-       then do 
-            liftIO $ putStrLn ("\ntransform= " ++ show (expr rb) ++ " => " ++show (top))
-            modify (\ s -> s { traceT = True} )
-       else return ()-}
-
     case  top of
-          --(Nothing, EmptyGraph) -> return (Leaf rb)
           (Nothing, graph') -> do
-                               trace <- gets traceT
-
-                               if trace 
-                                  then do 
-                                       liftIO $ putStrLn ("arg= " ++ show (expr rb) ++ " => " ++show (ppoints rb))   
-                                       liftIO $ putStrLn ("tail= " ++ show (graph') )
-                                       return ()
-                                  else return ()
- 
-                               --liftIO $ putStrLn ("================================\n" ++ show graph')
                                graph'' <- transform graph'
-                               --liftIO $ putStrLn (show graph'' ++ "\n================================")
                                return $ (Seq (Leaf rb) graph'' )
-                               --error $ (show (expr ra)) ++ (show graph)
           (Just ra, graph') -> do
                                loops <- gets count
-                               trace <- gets traceT
-                               
-                               if trace 
-                                  then do 
-                                       liftIO $ putStrLn ("arg= " ++ show (expr rb) ++ " => " ++show (ppoints rb)) 
-                                       liftIO $ putStrLn ("top= " ++ show (expr ra) ++ " => " ++show (ppoints ra))
-                                       return ()
-                                  else return ()
-
                                let Rel (sinkA, ia, sourceA) = ra
                                    Rel (sinkB, ib, sourceB) = rb
                                    id = ppoint . getLabel
@@ -480,37 +438,18 @@ transform (Seq (Leaf rb) graph)
                                            in case c of
                                                    (cB:countB) -> if all (== cB) countB then Just cB else Nothing
                                                    [] -> Nothing
-                               
-                               {-if (id sourceA) == 122 && (id sinkA == 123)
-                                  then do 
-                                       liftIO $ putStrLn (show (ib, ia))
-                                       error "here"
-                                  else return ()-}
 
-                               if sameA == sameB --all (== cA) countA && all (== cB) countB  && cA == cB
-                                  -- && not ( branchRa || branchRb || (hook (source ra)) || (bl (sink ra)) )
-                               --if (sinkNodes (sourceA, sinkA, sourceB, sinkB) loops)
+
+
+                               if sameA == sameB
                                   && not ( (hook (source ra)) || (bl (sink ra)) || branchRa ||
-                                           -- (hook (source rb)) ||
                                            (bl (sink rb)) || branchRb )
                                   then do
                                        let i = appendExpr ib ia
                                            r = Rel (sinkA, i , sourceB)
-                                           --
-
-                                       --if (id sinkA, id sourceA) == (39, 23)
-                                       --   then liftIO $ putStrLn ("reduce= " ++ show (expr ra) ++ " => " ++show (bl (sink ra)))
-                                       --   else return ()
-
-                                       {-if case ib of { (Exec b) -> branchInstr b ; _ -> False }
-                                          then do
-                                               graph'' <- transform graph
-                                               return (Seq (Leaf rb) graph'')
-                                          else-}
                                        transform (Seq (Leaf r) graph')
 
                                  else do
-                                      --liftIO $ putStrLn ("no reduction")
                                       graph'' <- transform graph
                                       return (Seq (Leaf rb) graph'')
 
@@ -538,7 +477,6 @@ transform (Conc c graphA graphB)
 
 transform (Seq graphA graphB)
   = do
-    --liftIO $ putStrLn ("Main transform: " ++ show (graphA) )
     graphA' <- transform graphA
     graphB' <- transform graphB
     return $ Seq graphA' graphB'

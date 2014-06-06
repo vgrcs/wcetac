@@ -40,7 +40,6 @@ import Arm.Operand hiding (Rel)
 
 
 data ProcElem = BlCall Proc
-               -- | BlRoot Proc
                deriving (Show, Eq)
 
 fromElem (BlCall p) = p

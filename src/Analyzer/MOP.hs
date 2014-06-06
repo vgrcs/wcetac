@@ -35,7 +35,7 @@ import Analyzer.IR
 
 
 
-type Id = Label -- Maybe Integer
+type Id = Label
 
 data MOPState a = MOPState { relational :: [Rel a],
                              startLabel :: Id, stopLabel :: Id, lastLabel :: Id,
@@ -43,7 +43,6 @@ data MOPState a = MOPState { relational :: [Rel a],
                              calls :: [Id],
                              debug :: Bool,
                              threads :: [(Label, CFG a)],
-                             --offset :: Integer,
                              noConc :: Bool }
 
 instance Show (MOPState a) where
@@ -61,7 +60,6 @@ mopStartLabel rel
                    RootL l@Identifier { procedure } ->
                      case (section procedure, procName procedure) of
                           ("main","main") -> True
-                          --("icrc","icrc") -> True
                           _ -> False
                    _ -> False
         index = case findIndex f rel of
@@ -95,29 +93,14 @@ mop
 mop s
    = do
      state <- get
-     --off <- gets offset
-     --start <- liftM (\l -> (shift l off)) (gets startLabel)
-     --stop <- liftM (\l -> (shift l off)) (gets stopLabel)
-     --cs <- liftM (\l -> map (\x -> shift x off) l) (gets calls)
-     --last <- liftM (\l -> (shift l off)) (gets lastLabel)
      start <- gets startLabel
      stop <- gets stopLabel
      cs <- gets calls
      last <- gets lastLabel
-
-     --put $ state {startLabel = start, stopLabel = stop, calls = cs, lastLabel = last}
-
      dbg <- gets debug
      c <- control
-
-     --d <- gets startLabel
-     --if ppoint d == 114
-     --   then modify (\ state@MOPState {} -> state { debug = True } )
-     --   else return ()
-
      case dbg of
           True ->  liftIO $ putStrLn ("\n" ++ show state ++ "\n" ++ show c ++ "\n" )
-          --True ->  liftIO $ putStrLn ("\n" ++ show c ++ "\n" )
           False -> return ()
 
      case  c  of
@@ -132,9 +115,6 @@ sequential
 
 sequential i1 s
    = do
-     --state <- get
-     --off <- gets offset
-     --liftIO $ putStrLn ("sequential, offset=" ++ show off)
      rec <- gets insideLoop
      rel <- gets relational
      start <- gets startLabel
@@ -162,13 +142,6 @@ sequential i1 s
                          let start' = succ start
                          modify (\ state@MOPState {} -> state {calls = cs ++ start':[] } )
                          s'' <- mop s'
-
-                         --liftIO $ putStrLn $ "CALLING [" ++ show (CallL x) ++ "] START'= " ++ show start' ++
-                         --                    ", STOP= " ++ show start' ++ ", CONTINUE? " ++
-                         --                    "PARENT START'= " ++ show (parent start') ++
-                         --                    "PARENT STOP= " ++ show (parent (CallL x)) ++
-                         --                    show ((parent start' == parent (CallL x)))
-
                          case parent start' == parent (CallL x) of
                               False -> do
                                       modify (\ state@MOPState {} -> state {startLabel = start' } )
@@ -191,8 +164,6 @@ multiple (i1,i2) state
          s = rel !! i2
          (b1, head) = ppoints r
 
-     --liftIO $ putStrLn ("test multiple: " ++ show r ++  " or " ++ show s)
-     --liftIO $ putStrLn ("head: " ++ show head)
      case head of
           Head _ -> if  (ppoint b1) < (ppoint  head)
                         then recursive (i1,i2) state
@@ -215,14 +186,10 @@ onepass (i1,i2) arg
         start = site2
         stop = head
 
-    --liftIO $ putStrLn "inside onepass"
     modify (\ state@MOPState {} -> state {startLabel = start, stopLabel = stop } )
     inner <- mop EmptyGraph
 
-
     let loop =  (Leaf r) `seq` inner
-
-    --liftIO $ putStrLn ("arg= " ++ show (arg) ++ "\nS= " ++ show (expr s) ++ "\nINNER= " ++ show inner )
 
     modify (\ state@MOPState {} -> state {startLabel = Empty, stopLabel = Empty} )
     return $ arg `seq` ((Leaf s) `iter` inner) `seq` (Leaf r)
@@ -245,15 +212,7 @@ recursive (i1,i2) arg
          stop = head
          start' = b2
 
-
-     --liftIO $ putStrLn "\ninside recursive"
-     --liftIO $ putStrLn $ "head= " ++ show (expr r, ppoints r)
-     --liftIO $ putStrLn $ "cont= " ++ show (expr s, ppoints s)
-
-     --liftIO $ putStrLn $ "loops= " ++ show lps
      modify (\ state@MOPState {} -> state {startLabel = start, stopLabel = stop, loops = lps ++ stop:[]} )
-     --liftIO $ putStrLn $ "new loops= " ++ show (lps ++ stop:[])
-
 
      inner <- mop EmptyGraph
      let body = (Leaf r) `rec` inner
@@ -263,12 +222,9 @@ recursive (i1,i2) arg
                      [] -> Empty
                      xs -> Data.List.last lps'
 
-
-     --liftIO $ putStrLn $ "reset loops= " ++ show (lps')
      modify (\ state@MOPState {} -> state {startLabel = start', stopLabel = stop', loops = lps'} )
 
      return $ arg `seq` body `seq` (Leaf s)
-
 
 
 parallel :: (Show a,  Stateable a) =>
@@ -277,8 +233,6 @@ parallel :: (Show a,  Stateable a) =>
 parallel (i1,i2) arg
    = do
      state <- get
-     --off <- gets offset
-     --prevStop <- liftM (\l -> (shift l off)) (gets stopLabel)
      prevStop <- gets stopLabel
      let rel = relational state
      let r = rel !! i1
@@ -289,34 +243,19 @@ parallel (i1,i2) arg
          startRht = b2
          stop = head
 
-     --liftIO $ putStrLn "\ninside parallel"
-     --liftIO $ putStrLn $ "left= " ++ show (expr r, ppoints r)
-     --liftIO $ putStrLn $ "right= " ++ show (expr s, ppoints s)
-
      lps <- gets loops
      let  break = if  not (null lps) && b1 > last lps
                       then True
                       else False
-     --liftIO $ putStrLn $ "loops= " ++ show lps
-     --liftIO $ putStrLn $ "break= " ++ show break
-
-     --modify (\ state@MOPState {} -> state { debug = True } )
 
      modify (\ state@MOPState {} -> state {startLabel = startLft, stopLabel = stop, debug = False } )
      lft <- mop EmptyGraph
 
-
-     --lft <- mop (Leaf r) -- TODO works for sample4
      inside <- gets insideLoop
-     --liftIO $ putStrLn ("\nparallel body left [" ++ show (inside) ++ "] \n=> " ++ show lft ++ "\n")
-
-     --liftIO $ putStrLn ("INSIDE PARALLEL " ++ show inside ++ ", ST_LFT= " ++ show startLft ++ ", ST_RHT= " ++ show startRht)
 
      modify (\ state@MOPState {} -> state {startLabel = startRht, stopLabel = stop, debug = False } )
      rht <- mop EmptyGraph
      modify (\ state@MOPState {} -> state { debug = False } )
-     --rht <- mop (Leaf s)
-     --liftIO $ putStrLn ("\nparallel body right  \n => " ++ show rht ++ "\n")
 
      if not inside
         then do
@@ -324,7 +263,6 @@ parallel (i1,i2) arg
              let lft_labels = labels [] lft
                  rht_labels = labels [] rht
                  join_labels = intersect lft_labels rht_labels
-             --liftIO $ putStrLn ("\nNOT INSIDE  \n => JOIN= " ++ show join_labels ++ "\n")
              case join_labels of
                   j:js -> do
 
@@ -337,8 +275,6 @@ parallel (i1,i2) arg
                          modify (\ state@MOPState {} -> state {lastLabel = j } )
                          modify (\ state@MOPState {lastLabel} -> state {startLabel = lastLabel, stopLabel = prevStop} )
 
-                         --error $ show (noConc state)
-
                          if (noConc state) --TODO
                             then if not break
                                     then return $ arg `seq` (Choice r lft'  rht'')
@@ -346,8 +282,6 @@ parallel (i1,i2) arg
 
                             else return $ arg `seq` (Conc r lft'  rht'')
                   [] -> do
-                       --error $ "AHAH " ++ show "\nLFT= " ++ show lft ++ "\nRGT= " ++ show rht
-
                        let lft' = Seq (Leaf r) lft
                            rht' = Seq (Leaf s) rht
 
@@ -360,9 +294,6 @@ parallel (i1,i2) arg
 
         else do
              modify (\ state@MOPState {} -> state { stopLabel = prevStop } )
-             --liftIO $ putStrLn ("\nINSIDE LOOP \n => ")
-             --liftIO $ putStrLn ("\nLEFT \n => " ++ show lft)
-             --liftIO $ putStrLn ("\nRIGHT \n => " ++ show rht)
              return $ arg `seq` ((Leaf r) `rec` lft `seq` (Leaf s) `seq` rht)
 
 

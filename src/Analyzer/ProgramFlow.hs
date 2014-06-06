@@ -74,7 +74,6 @@ iterations r cert le
         read = cert ! lookId
         store = cert ! storeId
 
-    --putStrLn $ "Iterations => " ++ show (at,after) ++ "\n"
     let cert' = case insideLoop read of
                      Yes a -> let node' = inLoop store (a ++ (sink r):[])
                               in insert storeId node' cert
@@ -82,20 +81,12 @@ iterations r cert le
         fixed = elem DataStable (stableValue store)
         infeasible =  infeasibleNode store
         update n = if fixed || infeasible then n else succ n
-
-        --le' = adjust update (lookId, storeId) le
         le' = if member (lookId, storeId) le
                  then adjust update (lookId, storeId) le
                  else if  infeasible
                           then insert (lookId, storeId) (TopL 0) le
                           else insert (lookId, storeId) (TopL 1) le
 
-    --putStrLn $ "prev= " ++ show (filterWithKey (\k _ -> k == (lookId, storeId)) le)
-    --putStrLn $ show (cert)
-    --putStrLn $ "fixed= " ++ show (storeId, fixed)
-    --putStrLn $ "infeasible= " ++ show (storeId, infeasible)
-    --putStrLn $ "after= " ++ show (filterWithKey (\k _ -> k == (lookId, storeId)) le')
-    --putStrLn ""
     return (cert, le')
 
 
@@ -130,9 +121,6 @@ instance (Show a,  Eq a, Cost a, Ord a) => Forkable (St (CPU a))  where
             core = (multi cpu) ! c
             CtrVal status = getReg (registers core) CPSR
             b = getControlB (control status)
-            b' = unsafePerformIO $ do
-                                   putStrLn $ "<<BRANCH>> c=" ++ show (b)
-                                   return $ b
         case b of
              1 -> return True
              0 -> return False
@@ -144,9 +132,6 @@ instance (Show a,  Eq a, Cost a, Ord a) => Forkable (St (CPU a))  where
             let node'  = node { value = cpu', insideLoop = No, stableLoop = False,
                                 stableFixpoint = False, stableValue = [] }
                 cert' = insert (ipoint at) node' cert
-            let cert'' = unsafePerformIO $ do
-                            putStrLn $ "COMPL " ++ show at
-                            return cert'
             return s { invs = cert' }
 
 
@@ -159,16 +144,7 @@ instance (Show a,  Eq a, Cost a, Ord a, Show (Node (CPU a) )) =>
              Just (n@Node { stableFixpoint = fix, stableValue = value, stableLoop = loop } )
                  = lookup (ipoint at) cert
 
-             (fix',b') = unsafePerformIO $ do
-#if defined(DEBUG)
-                            putStrLn $ "at= " ++ show at ++
-                                       ", fix= " ++ show fix ++
-                                       ", branch= " ++ show b ++
-                                       ", value= " ++ show value ++
-                                       ", loop= " ++ show loop
-#endif
-                            return (loop || fix, b)
-                            --return (fix, b)
+             (fix',b') = (loop || fix, b)
 
          return $ not fix' && b'
 
@@ -177,12 +153,8 @@ instance (Show a,  Eq a, Cost a, Ord a, Show (Node (CPU a) )) =>
          let (at,cert) = (getLabel s, invs s)
              c:cs = contexts $ cert ! (ipoint at)
              recursive = (procName . parent) c == (procName . parent) at
-             cond = unsafePerformIO $ do
-                                      putStrLn $ "CALLER: " ++ show (parent at) ++ " HOOK= " ++ show c
-                                      putStrLn $ "COND: " ++ show (parent c, parent at, recursive)
-                                      return recursive
+             cond = recursive
 
-         --return $ (List.null left')
          return $ not cond
 
     loop entry out
@@ -198,7 +170,6 @@ instance (Show a,  Eq a, Cost a, Ord a, Show (Node (CPU a) )) =>
 
                  cert' = mapWithKey update cert
                  out' = out  {invs = cert' }
-             -- return (out  {invs = cert' })
              becomeFeasible out'
 
 

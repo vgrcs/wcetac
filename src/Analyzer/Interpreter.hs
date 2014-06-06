@@ -219,7 +219,6 @@ targetPc (label,_) _
 
 squash
  :: (FiveStagePipeline a, Show a, Ord a) => Instruction
- -- -> Label
  -> PState a
  -> StateT (SimContext a) IO (Task, PState a)
 

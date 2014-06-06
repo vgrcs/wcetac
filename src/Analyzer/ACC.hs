@@ -214,17 +214,8 @@ chaoticTransf r rel cert@Cert { invariants } rmode
                           False -> let (parent, ac) = active cpu
                                        main = multi cpu Map.! ac
                                        dones = filter done (pipeline main)
-                                       --core' =  main { pipeline = nub $ map removeStubs $ filter done (pipeline main) }
                                        core' = case rmode of
-                                                    --Reduced True  -> main { pipeline = nub $ map (removeStubs True) dones }
                                                     Reduced -> main { pipeline = nub $ map (removeStubs False) dones }
-                                       {-core' =  if rmode == NotReduced || rmode == (Reduced True)
-                                                   then case dones of
-                                                             [] -> main { pipeline = [] }
-                                                             ds -> main { pipeline = nub $ map (removeStubs True) dones }
-                                                                   --main { pipeline = [maximum (pipeline main)] }
-                                                   else main { pipeline = nub $ map (removeStubs False) $ dones } -} --not working for any seq
-                                       --core'' = if at == 22 then error $ show (length (pipeline core')) else core'
                                        multi' = Map.insert ac core' (multi cpu)
                                    in cpu { multi = multi' }
 

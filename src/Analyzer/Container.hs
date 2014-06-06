@@ -64,56 +64,17 @@ instance (Lattice (CPU a), Show a, Eq a, Cost a) =>
         let label = source rel
         case  lookup (ipoint label) cert of
               Just node ->  do
-                           let cpu = value node
-                           --cpu'' <- if ((ppoint . sink) rel, (ppoint . source) rel ) == (14,13)
-                           --             then setCompl (cpu {active = (0,1) })
-                           --             else return cpu
-
-                           let cpu' = unsafePerformIO $ do
-                                          if (ipoint label) == 13
-                                             then do
-                                                  putStrLn $ "FOUND AT= " ++ show (ipoint label)
-                                                  --putStrLn $ "STABLE AT= " ++ show (stableLoop node)
-                                                  putStrLn $ "CERT AT= " ++ show (cert)
-                                                  return cpu
-                                             else return cpu
-
-                           return cpu { context = contexts node, stable = stableLoop node }
-              Nothing  -> do
-                         --let label' = reset label
-
-                         let rel' = unsafePerformIO $ do
-                                        putStrLn $ "RE-LABEL AT = " ++ show (label) -- , label')
-                                        return rel
-
-                         {-if (ipoint label) == (11,16,4)
-                             then do
-                                  (cpu, cert') <- read cert (adjustIn rel' label')
-                                  cert'' <- store cert' (adjustOut rel label) cpu
-                                  --error $ show (keys cert'')
-                                  return (cpu, cert)
-
-                             else read cert (adjustIn rel' label')-}
-
-
-                         read cert (adjustIn rel label)
+                            --let cpu = value node
+                            return (value node) { context = contexts node, stable = stableLoop node }
+              Nothing  -> read cert (adjustIn rel label)
 
 
     read_ cert label
       = case  lookup (ipoint label) cert of
-              Just node ->  do
+              Just node -> do
                            let cpu = value node
-
-                           let cpu' = unsafePerformIO $ do
-                                         putStrLn $ "GET_ AT= " ++ show label
-                                         return cpu
                            return cpu { context = contexts node }
-              Nothing  -> do
-                         --let bottom' = unsafePerformIO $ do
-                         --                putStrLn $ "NOT FOUND AT= " ++ show label
-                         --                return bottom
-
-                         return bottom
+              Nothing  ->  return bottom
 
 
     store cert rel cpu@CPU {context = ctxs, active = act, stable, multi}
@@ -128,13 +89,6 @@ instance (Lattice (CPU a), Show a, Eq a, Cost a) =>
                                let caller = contexts node
                                let ctxs'  = unsafePerformIO $ ifNewCContext caller rel ctxs
                                    ctxs'' = unsafePerformIO $ ifDeleteCContext caller rel ctxs'
-                               {-let var_ = unsafePerformIO $ do
-                                            if ppoint source == 14
-                                               then
-                                                    do
-                                                    putStrLn $ "STATE " ++ show (ctxs'')
-                                                    return var'
-                                               else return var'-}
                                return ctxs''
                   Nothing -> do
                             let ctxs'  = unsafePerformIO $ ifNewCContext [] rel ctxs
@@ -156,18 +110,6 @@ instance (Lattice (CPU a), Show a, Eq a, Cost a) =>
              cert''' = if infeasibleArch
                          then adjust (\n -> n {infeasibleNode = True} ) (ipoint sink) cert''
                          else adjust (\n -> n {infeasibleNode = False} ) (ipoint sink) cert''
-
-         let cert_ = unsafePerformIO $ do
-                       --putStrLn $ "STORE AT= " ++ show (ipoint sink) ++ " ;CONTEXTS= " ++ show st
-                       --putStrLn $ "STORE AT= " ++ show (ipoint sink) ++ " ;INFEASIBLE= " ++ show infeasibleArch
-                       --putStrLn $ "STORE AT= " ++ show (ipoint sink) ++ " ;ACTIVE= " ++ show active
-                       if ppoint source == 14 || ppoint source == 13
-                          then do
-                               putStrLn $ "STORE AT= " ++ show (ipoint sink) ++ " ;STABLE= " ++ (show (active cpu'))
-                               putStrLn $ "STORE AT= " ++ show (ipoint sink) ++ " ;STABLE= " ++ (show cert''')
-                          else return ()
-                       return cert'''
-
          return cert'''
 
 
@@ -204,7 +146,6 @@ ifNewCContext caller rel contexts
   = let (sink, source) = ppoints rel
     in case (caller, bl sink) of
             (prev, False) -> return $ contexts
-            --(prev, True ) -> return $ (succ (ppoint source)) : contexts
             (prev, True ) -> return $ (succ (source)) : contexts
 
 
@@ -218,14 +159,12 @@ ifDeleteCContext
 ifDeleteCContext caller rel contexts
   = do
     let (sink, source) = ppoints rel
-    --putStrLn $ "ifDeleteCContext: contexts=" ++ show contexts ++ " ,caller=" ++ show caller
     case (caller, exit sink) of
          (prev, False) -> return contexts
          (prev, True ) -> case contexts of
-                              --c:cs -> return cs
                               c:cs -> if null $ takeWhile (== c) cs
                                         then return cs
-                                        else return cs -- $ dropWhile (==c) cs
+                                        else return cs
                               [] -> return prev
 
 -- | Update the sink label of a transition with the context of a CPU
@@ -239,10 +178,7 @@ returnCallingContext rel cpu@CPU { context }
      let (sink, source) = ppoints rel
      sink' <- case exit sink of
                    False -> return $ sink
-                   True -> do
-                          --putStrLn $ "RETURN CALLING CONTEXT= " ++ show context
-                          --putStrLn $ "EXIT CONTEXT= " ++ show (ipoint sink)
-                          case context of
+                   True  -> case context of
                                   (c:cs) -> return $ setId sink (ppoint c)
                                   [] -> return $ setId sink (-1)
      return $ adjustOut rel sink'
@@ -258,16 +194,11 @@ updateCallingContext
 
 updateCallingContext rel cpu@CPU { context }
   = case sink rel of
-         ExitL l ->  do
-                    --putStrLn $ "UPDATE CALLING CONTEXT= " ++ show (sink rel, context)
-                    case context of
+         ExitL l -> case context of
                          [] -> return cpu
                          c:[] -> return cpu { context = c:[] }
                          c:cs -> if null $ takeWhile (== c) cs
-                                   then  do
-                                         --putStrLn "NO RECURSIVE CALLS"
-                                         --return cpu { context = cs }
-                                         return cpu { context = c:cs }
+                                   then return cpu { context = c:cs }
                                    else return cpu
          _ -> return cpu
 

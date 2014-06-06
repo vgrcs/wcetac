@@ -51,9 +51,6 @@ model (s :: Set Labels)
   = do x <- var__ "x" s
        y <- var_ "d" e
        maximize "wcet" $ sum [cycles(j)*x(j) | j<-s]
-       --error $ (show (x( s !! 7))) ++ "\n" ++  show (nodes ( s !! 7))
-       --error $ (show (x( s !! 7))) ++ "\n" ++  show (edges ( e !! 5))
-       --error $ (show [ x(i) %== sum [ nodes(i) | j<-e, edges(j) == Con (Pair (6,5)) ] | i <- [s!!7]])
        subject_to "incoming" [ x(i) %== sum [ y(j) | j<-e , nodes(i) %>> (edges(j)) ] | i <- s]
        subject_to "outgoing" [ x(i) %== sum [ y(j) | j<-e , nodes(i) %<< (edges(j)) ] | i <- s]
        subject_to "bounds" [ y(j) %<= bounds(j) | j<-e ]
@@ -146,13 +143,7 @@ modelInstance rel invariants count
         x = (mergeEquations . constraints) mInstance
         y = zip ([1..length x]) x
 
-    in --error (show ((getEquations . constraints) mInstance))
-       --error (show ((mergeEquations . constraints) mInstance))
-       --error (show count)
-       --error ("ids= " ++ show (length ids))
-       --error ("cycles= " ++ show (locals))
-       --error ("edges= " ++ show (count))
-       toGLPK ((fst . objective) mInstance)
+    in toGLPK ((fst . objective) mInstance)
               ((mergeEquations . constraints) mInstance)
               ((getBounds . constraints) mInstance)
 
@@ -166,8 +157,7 @@ solveModelVars rel invariants count
   = let lp = modelInstance rel invariants count
         solution = unsafePerformIO $ glpSolveVars simplexDefaults "new.lp" (runGLPK lp)
         (returncode, Just (wcet, tuples, vars, values, dual_values)) = solution
-    in --error (show dual_values)
-       wcet
+    in wcet
 
 
 verifyModel rel invariants count (wcet, primal, dual)
@@ -175,35 +165,8 @@ verifyModel rel invariants count (wcet, primal, dual)
         solution = unsafePerformIO $ glpSolveMatrix simplexDefaults (runGLPK lp)
         (returncode2, Just (m,n,mat, bounds, coefs, vars)) = solution
         checker = checkerInstance rel invariants count m n mat primal dual bounds coefs wcet
-    in --error (show (m,n)) --
-       --(length mat, length bounds, Map.size primal, checker)
-       (checker)
+    in (checker)
 
 
 runGLPK :: LPM String Int () -> LP String Int
 runGLPK lp = execLPM lp
-
-
-
-
-{-lpModel
-  :: (Cost t, Ord t, Show t, Transition (Rel a),  Stateable a, Ord (Coord t)) => [Int]
-  -> [Rel a]
-  -> Times t
-  -> NodeCount
-  -> (LP String Int)
-
-lpModel nodes rel invariants edges
-  = do
-    let labels = foldl (\a r -> ((show . sink) r):((show . source) r):a ) [] rel
-        transitions = foldl (\a r -> ((show . expr) r):a ) [] rel
-    runGLPK $ testLP
-
-
-runGLPK :: LPM String Int () -> LP String Int
-runGLPK lp = execLPM lp
-
---translation
-testLP :: LPM String Int ()
-testLP = (leqTo (varSum ["dx"]) 3)
--}
