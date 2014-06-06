@@ -1,0 +1,59 @@
+name: wcetac
+version: 1.0.0
+cabal-version: >=1.2
+build-type: Simple
+license: BSD3
+license-file: ""
+maintainer: Vitor Rodrigues
+stability: prototype
+homepage: http://www.dcc.fc.up.pt/~vitor.rodrigues/
+synopsis: Prototype of WCET static analyzer/checher for multicore architectures
+description: This is a static analysis that uses abstract interpretation and linear programming to estimate and verify the WCET
+category: static analyzers
+author: Vitor Rodrigues
+data-files: bs.c bs.s bsort.c bsort.s cnt.c cnt.s cover.c cover.s
+            crc.c crc.s expint.c expint.s fdct.c fdct.s fibcall.c fibcall.s
+            mainwhile.c mainwhile.s matmult.c matmult.s minmax.c minmax.s
+            prime.c prime.s ud.c ud.s
+data-dir: data
+extra-source-files: docs/manual.pdf
+ 
+executable wcetac
+    build-depends: MissingH -any, Vec -any, array -any, base -any,
+                   binary -any, bytestring -any, cmdargs -any, containers -any,
+                   deepseq -any, logfloat -any, mtl -any, pretty -any, process -any,
+                   template-haskell -any, xml -any, zlib -any
+    main-is: Main.hs
+    buildable: True
+    c-sources: src/glpk.c
+    extra-libraries: glpk
+    extra-lib-dirs: /opt/local/lib
+    hs-source-dirs: src
+    other-modules: Main ParserC AMPL.AMPL Analyzer.ACC
+                   Analyzer.Analysis Analyzer.ARM5StagePipeline Analyzer.Certificate
+                   Analyzer.Channel Analyzer.Chaotic Analyzer.Compiler
+                   Analyzer.Container Analyzer.Debugger Analyzer.GraphMLBackend
+                   Analyzer.ILP Analyzer.Interleavings Analyzer.Interpreter
+                   Analyzer.IR Analyzer.Label Analyzer.Lattice Analyzer.LPModel
+                   Analyzer.LRU Analyzer.MOP Analyzer.Operators Analyzer.PipelineModel
+                   Analyzer.ProgramFlow Analyzer.RelationalAbs Analyzer.ScreenPrinter
+                   Analyzer.Semantics Analyzer.Serializer Analyzer.Stack
+                   Analyzer.Threads Analyzer.ValueAbstraction Arm.Assembler
+                   Arm.BinaryNumber Arm.CPU Arm.Decoder Arm.Encoder Arm.Format
+                   Arm.Instruction Arm.Loader Arm.Memory Arm.Operand Arm.ParseLib
+                   Arm.Parser Arm.Pipeline Arm.Program Arm.Register Arm.RegisterName
+                   Arm.Swi Control.Monad.LPMonad Control.Monad.Par
+                   Control.Monad.LPMonad.Internal Control.Monad.LPMonad.Supply
+                   Control.Monad.LPMonad.Supply.Class Control.Monad.Par.Internal
+                   Data.Algebra Data.LinearProgram Data.Algebra.Field
+                   Data.Algebra.Group Data.Algebra.Module Data.Algebra.Ring
+                   Data.LinearProgram.Common Data.LinearProgram.GLPK
+                   Data.LinearProgram.LinExpr Data.LinearProgram.Spec
+                   Data.LinearProgram.Types Data.LinearProgram.GLPK.Common
+                   Data.LinearProgram.GLPK.Internal Data.LinearProgram.GLPK.IO
+                   Data.LinearProgram.GLPK.Solver Data.LinearProgram.GLPK.Types
+                   Data.LinearProgram.GLPK.IO.Internal ForSyDe.Backend.Ppr
+                   ForSyDe.Backend.GraphML.AST ForSyDe.Backend.GraphML.FileIO
+                   ForSyDe.Backend.GraphML.Ppr ForSyDe.Backend.GraphML.Traverse
+                   ForSyDe.Backend.GraphML.Traverse.GraphMLM
+ 

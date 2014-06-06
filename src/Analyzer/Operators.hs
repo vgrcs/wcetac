@@ -1,0 +1,205 @@
+
+-----------------------------------------------------------------------------
+--
+-- Module      :  Analyzer.Operators
+-- Copyright   :  None
+-- License     :  BSD3
+--
+-- Maintainer  :  Vitor Rodrigues
+-- Stability   :
+-- Portability :
+--
+-- |
+--
+-----------------------------------------------------------------------------
+
+module Analyzer.Operators ( copy, (****), (++++), ($$$$), (////), wide, multiply, divide, reduce
+
+) where
+
+
+-----------------------------------------------------------------------------
+-- Standard libraries.
+-----------------------------------------------------------------------------
+import Control.Monad hiding (join)
+import System.IO.Unsafe
+import Control.Monad.Fix
+
+-----------------------------------------------------------------------------
+-- Local libraries.
+-----------------------------------------------------------------------------
+import Analyzer.ProgramFlow
+import Analyzer.Lattice
+import Analyzer.Semantics
+import Analyzer.Interleavings
+
+copy
+  :: (Forkable a) => a
+  -> IO (a,a)
+
+copy a
+  = do
+    a' <- compl a
+    return (a, a')
+
+
+divide
+  :: Int -> a -> IO [a]
+
+divide n a
+  = do
+    --error $ "DIVIDE " ++ (show ((n)))
+    return $ replicate n a
+
+multiply
+  :: (Lattice a, Show a, Synchronizable a) => [a -> IO a]
+  ->  [a]
+  ->  IO [a]
+
+multiply fs as
+  = do
+    zipWithM (\f a -> f a) fs as
+    --as' <- sequence $ map f as
+    --reduce as'
+
+reduce
+  :: (Lattice a, Synchronizable a, Show a) => [a]
+  ->  IO a
+
+reduce (a:as)
+  = do
+    (a':as') <- mapM finalize (a:as)
+    --foldM (\accum v' -> join accum v') a' as'
+    return $ foldl join a' as'
+
+
+{-alternatives
+  :: (Show a, Forkable b) => (a -> Par b)
+  -> (a -> Par b)
+  -> a
+  -> Par (b,b)
+
+alternatives left right s
+  = do
+    (l, r) <- (left //// right) (s, s) --liftM2 (\a b -> (a,b)) (left s) (right s)
+    b  <- branch l
+    if b
+       then liftM (\r -> (l,r) ) (compl r)
+       else liftM (\l -> (l,r) ) (compl l)
+-}
+
+(*****) :: (a -> b) -> (b -> c) -> (a -> c)
+(f ***** g) s = (g . f) s
+
+(/////) :: (a -> b) -> (c -> d) -> ((a,c) -> (b, d))
+(f ///// g) (s, t) = (f s, g t)
+--(f ///// g) p = (f . fst, g . snd)
+
+
+
+(****)
+   :: (Show a, Show b) =>(a -> IO b)
+   -> (b -> IO c)
+   -> a
+   -> IO c
+
+
+(f **** g) s
+   = do
+     s' <- f s
+     s'' <- g s'
+     return s''
+
+
+{-(++++)
+   :: (Show b, Forkable a, Iterable b) =>  (b -> IO a)
+   -> (a -> IO b)
+   -> a
+   -> IO a
+
+(f ++++ t) s
+  =  do
+     s' <- t s
+     b  <- fixed s'
+     if   b  then (loop **** f **** (f ++++ t)) s'
+             else compl s-}
+
+(++++)
+   :: (Show b, Forkable a, Iterable b, Stateable a) =>  (b -> IO a)
+   -> (a -> IO b)
+   -> a
+   -> IO a
+
+f ++++ t
+  =  fix $
+     \rec s -> do
+               s' <- t s
+               b  <- fixpoint s'
+               if   b  then (loop s **** f **** rec) s'
+                       else compl s
+
+
+
+($$$$)
+  :: (Iterable b, Iterable c, Stateable b) =>
+     (c -> IO b) -> (b -> IO c) -> b -> IO c
+
+f $$$$ t
+  =  fix $
+     \rec s -> do
+               s' <- t s
+               b  <- emptyStack s
+               if  not b
+                   then (loop s **** f **** rec) s'
+                   else return s'
+
+{-(f $$$$ t) s
+  =  do
+     s' <- t s
+     b  <- fixed2 s
+     if  not b
+              then (loop **** f **** (f $$$$ t)) s'
+              else return s'-}
+
+
+(////)
+   :: (Show a, Show c) => (a -> IO  b)
+   -> (c -> IO  d)
+   -> (a,c)
+   -> IO (b, d)
+
+(f //// g) (s, t)
+   = liftM2 (\ x y -> (x,y)) (f s) (g t)
+
+{-(f //// g) (s, t)
+    = do
+      s' <- f s
+      t' <- g t
+      return (s' , t') -}
+
+-- (f |||| g)
+
+
+
+wide
+   :: (Show a, Stateable a, Lattice a, Infeasible a) => (Rel a) -> (a, a)
+   -> IO  a
+
+wide r (a, b)
+   = do
+     ia <- infeasible a
+     ib <- infeasible b
+
+     j <- case (ia, ib) of
+          (False, False) -> return $ join a b
+          (False, True)  -> do
+                            a' <- becomeFeasible a
+                            b' <- becomeFeasible b
+                            return $ join a' b'
+          (True, False) -> do
+                           a' <- becomeFeasible a
+                           b' <- becomeFeasible b
+                           return $ join a' b'
+          (True, True)  -> return $ join a b
+
+     return j
