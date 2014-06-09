@@ -182,8 +182,10 @@ accAnalysis cpu fix rel prog instrs NotReduced
                                            (runWriterT
                                            (runReaderT (generator Consumer return cfg') Nothing ))
                                            initial
+
                    out@St { invs = cert, edges = le }
                         <- meta $ initialSt { invs = resetCert cpu (ipoint startLabel) invsS }
+
                    return (rel', rel', rel', cert, le, le)
 
 accAnalysis cpu fix rel prog instrs Reduced

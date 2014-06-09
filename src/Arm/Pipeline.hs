@@ -46,7 +46,7 @@ instance (Eq a, Ord (PState a), Show (PState a)) => Lattice (Pipeline a) where
   join  new existing
        = (sort) (existing ++ new)
 
-instance (Eq a,  Cost a) => PartialOrd (Pipeline a) where
+instance (Eq a, Ord a, Cost a) => PartialOrd (Pipeline a) where
   cmp a b
     = if isInfixOf a b || isSuffixOf a b  || isPrefixOf a b
          then Just LT
@@ -74,7 +74,7 @@ data PState a = PState { simtime :: Int,
 type Targets = [(Instruction, Word32)]
 
 -- |
-instance (Eq a,  Cost a) =>  Eq (PState a) where
+instance (Eq a,  Cost a, Ord a) =>  Eq (PState a) where
   a == b = coords a == coords b
 
 
@@ -100,9 +100,10 @@ data Coord a = Coord (Vec.Vec3 (AbsTaskState a))
 
 
 -- | The coordinates may be the same even if they are in different lines inside the pipeline.
-instance (Eq a,  Cost a) => Eq (Coord a) where
+instance (Eq a, Ord a, Cost a) => Eq (Coord a) where
   Coord a == Coord b
-    =  length ((Vec.toList a) `intersect` (Vec.toList b)) == Vec.length a
+    =  -- length ((Vec.toList a) `intersect` (Vec.toList b)) == Vec.length a
+       (maxcycles (Coord a)) == (maxcycles (Coord b))
 
 
 instance (Ord a, Eq a, Show (AbsTaskState a), Cost a) => Ord (Coord a) where

@@ -186,7 +186,10 @@ sender fileName rmode verbose
 
           cert' <- if rmode == Reduced
                       then chaoticTransf r rel cert rmode >>= \c ->
-                           serialize rmode verbose (Map.size (invariants cert)) (invariants c) >>
+                           let Rel (_, expr, source) = (maximum rel)
+                               points = (fromInteger (ppoint (labelSt source))) +
+                                        (length (toListExpr expr)) + 1
+                           in  serialize rmode verbose points (invariants c) >>
                            return c
                       else serialize rmode verbose 0 (invariants cert) >>
                            return cert
@@ -216,6 +219,7 @@ chaoticTransf r rel cert@Cert { invariants } rmode
                                        dones = filter done (pipeline main)
                                        core' = case rmode of
                                                     Reduced -> main { pipeline = nub $ map (removeStubs False) dones }
+                                                    NotReduced -> main
                                        multi' = Map.insert ac core' (multi cpu)
                                    in cpu { multi = multi' }
 

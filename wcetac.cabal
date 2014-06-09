@@ -14,7 +14,7 @@ author: Vitor Rodrigues
 data-files: bs.c bs.s bsort.c bsort.s cnt.c cnt.s cover.c cover.s
             crc.c crc.s expint.c expint.s fdct.c fdct.s fibcall.c fibcall.s
             mainwhile.c mainwhile.s matmult.c matmult.s minmax.c minmax.s
-            prime.c prime.s ud.c ud.s
+            nested.c nested.s prime.c prime.s ud.c ud.s
 data-dir: data
 extra-source-files: docs/manual.pdf
  
@@ -37,12 +37,12 @@ executable wcetac
                    Analyzer.IR Analyzer.Label Analyzer.Lattice Analyzer.LPModel
                    Analyzer.LRU Analyzer.MOP Analyzer.Operators Analyzer.PipelineModel
                    Analyzer.ProgramFlow Analyzer.RelationalAbs Analyzer.ScreenPrinter
-                   Analyzer.Semantics Analyzer.Serializer Analyzer.Stack
-                   Analyzer.Threads Analyzer.ValueAbstraction Arm.Assembler
-                   Arm.BinaryNumber Arm.CPU Arm.Decoder Arm.Encoder Arm.Format
-                   Arm.Instruction Arm.Loader Arm.Memory Arm.Operand Arm.ParseLib
-                   Arm.Parser Arm.Pipeline Arm.Program Arm.Register Arm.RegisterName
-                   Arm.Swi Control.Monad.LPMonad Control.Monad.Par
+                   Analyzer.Semantics Analyzer.Serializer Analyzer.Serializer
+                   Analyzer.Stack Analyzer.Threads Analyzer.ValueAbstraction
+                   Arm.Assembler Arm.BinaryNumber Arm.CPU Arm.Decoder Arm.Encoder
+                   Arm.Format Arm.Instruction Arm.Loader Arm.Memory Arm.Operand
+                   Arm.ParseLib Arm.Parser Arm.Pipeline Arm.Program Arm.Register
+                   Arm.RegisterName Arm.Swi Control.Monad.LPMonad Control.Monad.Par
                    Control.Monad.LPMonad.Internal Control.Monad.LPMonad.Supply
                    Control.Monad.LPMonad.Supply.Class Control.Monad.Par.Internal
                    Data.Algebra Data.LinearProgram Data.Algebra.Field

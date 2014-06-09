@@ -245,6 +245,8 @@ instance Eq Label where
   HookL l1 == RootL l2    =  l1 == l2
   RootL l1 == HookL l2    =  l1 == l2
 
+  RootL l1 == CallL l2    =  False
+  HookL l1 == CallL l2    =  False
   other == other2 = error ("eq ?" ++ show (other, other2))
 
 instance Show Label where

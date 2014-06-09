@@ -290,15 +290,16 @@ updateLRU addr input level l1 l2 m rw
                                                Read -> let val = (Array.!) m addr
                                                        in  return (MR2, val, l1, l2 , m)
                     Hit ix -> case rw of
-                                   Read -> let  line = case level of
+                                   Read -> do
+                                           let  line = case level of
                                                             L1 -> Seq.index l1 ix --l1 Map.! ix
                                                             L2 -> Seq.index l2 ix --l2 Map.! ix
                                                 map = Map.fromList line
-                                                pos = Map.findIndex addr map
-                                                (_, val) = Map.elemAt pos map
-                                           in case level of
-                                                       L1 -> return (HR1, val, l1, l2, m)
-                                                       L2 -> return (HR2, val, l1, l2, m)
+                                           let  pos = Map.findIndex addr map
+                                           let  (_, val) = Map.elemAt pos map
+                                           case level of
+                                                L1 -> return (HR1, val, l1, l2, m)
+                                                L2 -> return (HR2, val, l1, l2, m)
                                    Write -> let Just a = input
                                             in case level of
                                                     L1 -> return (HW1, a, l1, l2, m)

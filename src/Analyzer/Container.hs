@@ -63,9 +63,7 @@ instance (Lattice (CPU a), Show a, Eq a, Cost a) =>
       = do
         let label = source rel
         case  lookup (ipoint label) cert of
-              Just node ->  do
-                            --let cpu = value node
-                            return (value node) { context = contexts node, stable = stableLoop node }
+              Just node -> return (value node) { context = contexts node, stable = stableLoop node }
               Nothing  -> read cert (adjustIn rel label)
 
 

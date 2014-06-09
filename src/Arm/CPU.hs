@@ -56,7 +56,6 @@ data CPU a
 type MultiCore a = Map.Map Int (Core a)
 
 
-
 -- |
 instance (Show a, Show (PState a)) => Show (CPU a) where
   show cpu
@@ -67,22 +66,11 @@ instance (Show a, Show (PState a)) => Show (Core a) where
 
 
 -- | Compare the shared memory plus the internals of each core
-instance (Eq a,  Cost a) => Eq (CPU a) where
+instance (Eq a, Ord a, Cost a) => Eq (CPU a) where
   BottomCPU == BottomCPU = True
   BottomCPU == b = False
   a == BottomCPU = False
-  a == b  = datam (memory a) == datam (memory b) &&
-           multi a == multi b
-
-
--- | Partial order on the complete CPU domain
-instance (Show a, Ord a, Eq a, Ord (Core a),  Cost a) => Ord (CPU a) where
-  compare a b =  let  m = memory a `compare` memory b
-                      r = Map.intersectionWith compare (multi a) (multi b)
-                 in if Map.size (multi a) /= Map.size (multi b)
-                       then GT
-                       else maximum (Map.elems r)
-
+  a == b  = datam (memory a) == datam (memory b) && multi a == multi b
 
 -- | Lattice implementation for CPU
 instance (Show a, Ord a, Eq a, Cost a, Ord (PState a), Show (PState a)) => Lattice (CPU a) where
@@ -96,12 +84,11 @@ instance (Show a, Ord a, Eq a, Cost a, Ord (PState a), Show (PState a)) => Latti
           cores = Map.unionWith join (multi a) (multi b)
           stable' = stable a || stable b
           parallel' = parallel a || parallel b
-          act = active b --if (active a) == (0,0) && (active b)  == (0,0) then (0,0) else (0,1)
+          act = active b
           ctx = context b
           new = CPU { memory = mem, multi = cores,  active = act, context = ctx,
                       stable = stable', parallel = parallel' }
       in new
-
 
 
 -- | Bus delays are defined as interval abstractions
@@ -147,7 +134,7 @@ instance (Show a, Ord a, Eq a, Ord (PState a),  Cost a) => Ord (Core a) where
                  in compare p r
 
 -- |
-instance (Eq a,  Cost a) => Eq (Core a) where
+instance (Eq a, Ord a, Cost a) => Eq (Core a) where
   a == b  = registers a == registers b
            && List.nub (pipeline a) == List.nub (pipeline b)
 

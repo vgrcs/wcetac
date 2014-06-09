@@ -125,27 +125,29 @@ instance Cost WCET where
   sharedAccess w@WCET { taskcycles = cycles, arrival = Just ta, cpu = c, finish = Just f, delay = d}
     = do
       usingTDM <- readIORef lrServerOff
-      (tf, b) <- if not usingTDM --lr
+      (d, b, tf) <-
+              if not usingTDM --lr
                  then do
                       let ts =  max (ta + latency) f
-                          busy = f <= ta + latency
+                          busy = f >= ta + latency
                           tf = ts + (1/rate)
-                          delay = if busy then 1/rate else tf - ta
-                      return (delay, busy)
+                          delay = if busy then 1/rate else 1/rate + latency --tf - ta
+                      return (delay, busy, tf)
 
-                else do
-                     let ts =  (round ta) `mod` tdma
-                         start = slots * (c-1)
-                         end = start + slots - 1
-                         tf =  if  start <= ts && ts <= end
-                                   then 0
-                                   else if ts < start
-                                           then start - ts
-                                           else tdma - ts + start
-                     return (fromIntegral (tf+1), False)
+                 else do
+                      let ts =  (round ta) `mod` tdma
+                          start = slots * (c-1)
+                          end = start + slots - 1
+                          tf =  if  start <= ts && ts <= end
+                                    then 0
+                                    else if ts < start
+                                            then start - ts
+                                            else tdma - ts + start
+                      return (fromIntegral (tf+1), False, 0)
 
-      return w { taskcycles = cycles + round (tf), finish = Just (ta + tf),
-                 delay = (round tf), busy = b }
+      return w { taskcycles = cycles + round d,
+                 finish = if b then Just (d + tf) else Just (ta + d),
+                 delay = round d, busy = b }
 
   prevSharedAccess w
     = finish w

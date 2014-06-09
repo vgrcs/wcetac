@@ -227,6 +227,7 @@ squash instr pipe
     rel <- gets simRel
     t <- gets simTask
 
+
     let pipe' = case t of
                      Nothing -> pipe
                      Just t1 -> pipe { regfile = taskRegisters t1, mem = taskMemory t1 }
