@@ -67,7 +67,7 @@ wcetav = WCETAC {
          lr = True &= help "use the LR-rate server abstraction",
          analyze = True  &= help "run the WCET analyzer",
          noreduce = False &= help "don't apply the sequential recursive transformations",
-         check = def  &= help "run the WCET checker" } &=
+         check = False  &= help "run the WCET checker" } &=
          verbosity &=
          help "WCET Static Analyzer/Checker" &=
          summary "WCETAC v1.0.0, Vitor Rodrigues" &=
@@ -96,14 +96,12 @@ main = do
        (str, cert) <- timeStamp verbosity "GENERATION TIME SUPPLIER=" $
                       sender path rmode verbosity
 
-       when verbosity (putStrLn "\nSENDING CERTIFICATE...\n")
-       g <- newChannel
-       sendCert g (str, cert)
-
-       (str', cert') <- liftM fromJust $ getCert g
-
-       valid <- timeStamp verbosity "VERIFICATION TIME RECEIVER=" $
-                receiver str' cert' rmode verbosity
-
-       when verbosity (putStrLn ("SAFETY VERIFICATION? " ++ (if valid then "OK" else "FAILED")))
+       when (check line) $
+                   do
+                   when verbosity (putStrLn "\nSENDING CERTIFICATE...\n")
+                   g <- newChannel
+                   sendCert g (str, cert)
+                   (str', cert') <- liftM fromJust (getCert g)
+                   valid <- timeStamp verbosity "VERIFICATION TIME RECEIVER=" (receiver str' cert' rmode verbosity)
+                   when verbosity (putStrLn ("SAFETY VERIFICATION? " ++ (if valid then "OK" else "FAILED")))
        putStrLn ""

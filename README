@@ -1,0 +1,4 @@
+This is the WCETAC tool, a Worst-Case Execution Time (WCET) Analyzer/Checker.
+Please read the file “manual.pdf”  inside the “docs” directory in order to execute a local installation of the “wcetac” (Haskell) tool.
+
+-Vitor Rodrigues
